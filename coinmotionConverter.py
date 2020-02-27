@@ -1,3 +1,4 @@
+from datetime import datetime
 
 # Constants
 TYPE_FIN_DEPOSIT   = "Talletus"
@@ -13,6 +14,9 @@ TYPE_ENG_DEPOSIT   = "Deposit"
 TYPE_ENG_TRADE     = "Trade"
 TYPE_ENG_WITHDRAW  = "Withdrawal"
 
+
+# Timezone offset ( hours )
+TIME_OFFSET        = -3
 
 file = "coinmotion-balances-20200216-223558.csv"
 exports = "exports"
@@ -42,7 +46,10 @@ def reverseDateOrder(data):
     
 
 # Convert ' 11.11.2017 16:35 ' date to ' 2019-06-26 23:11:00 '
-def convertDate(date):
+# params:
+#  date - raw date string
+#  offset - hours as offset
+def convertDate(date, offset):
     
     separated = date.split(" ")
 
@@ -60,12 +67,20 @@ def convertDate(date):
     
     newYmd = year + "-" + month + "-" + day + " " + separated[1] + ":00"
     
+    # Change timezone
+    if offset != 0:
+        
+        dt = datetime.strptime(newYmd, '%Y-%m-%d %H:%M:%S')
+        ms = (dt.timestamp() * 1000) + ( offset * 3600000)
+        
+        newYmd = datetime.fromtimestamp(float(ms)/1000).strftime('%Y-%m-%d %H:%M:%S')
+        
     return newYmd
 
 def convertRow(row):
     splitted = row.split(',')
     
-    date = convertDate(splitted[0])
+    date = convertDate(splitted[0], TIME_OFFSET)
     
     return "null"
 
@@ -101,7 +116,7 @@ def convertRows(data):
         
         # convert
         splitted = line.split(',')
-        date = convertDate(splitted[0])
+        date = convertDate(splitted[0], TIME_OFFSET)
         
         oldRecognized = recognized
         cryptoLine = ""
@@ -111,7 +126,7 @@ def convertRows(data):
             cryptoLineSplitted = cryptoLine.split(',')
             #print("Trading " + splitted[4] + " EUR to" + cryptoLineSplitted[4] + " with fee " + splitted[5])
             newLine = ""
-            newLine = createRow("Trade", getValue(cryptoLineSplitted[4]), cryptoLineSplitted[1], getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "EUR to Crypto trade", convertDate(splitted[0]))
+            newLine = createRow("Trade", getValue(cryptoLineSplitted[4]), cryptoLineSplitted[1], getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "EUR to Crypto trade", convertDate(splitted[0], TIME_OFFSET))
             print(newLine)
             recognized += 1
         
@@ -120,7 +135,7 @@ def convertRows(data):
             cryptoLine = data[x+1]
             cryptoLineSplitted = cryptoLine.split(',')
             newLine = ""
-            newLine = createRow("Trade", getValue(splitted[4]), splitted[1], getValue(cryptoLineSplitted[4]), cryptoLineSplitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "EUR to Crypto trade", convertDate(splitted[0]))
+            newLine = createRow("Trade", getValue(splitted[4]), splitted[1], getValue(cryptoLineSplitted[4]), cryptoLineSplitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "EUR to Crypto trade", convertDate(splitted[0], TIME_OFFSET))
             print(newLine)
             recognized += 1
             
@@ -129,28 +144,28 @@ def convertRows(data):
             #print("Depositing " + splitted[4])
             newLine = ""
             #newLine += "\"Deposit\", " + "\"" + trimVal(splitted[4]) + "\", " + "\"" + splitted[1] + "\", " + "\"\", " + "\"\", " + "\"\", " + "\"\", " + "\"Coinmotion\", " + "\"\", " + "\"EUR deposit\", " + "\"" + convertDate(splitted[0]) + "\""
-            newLine = createRow("Deposit", getValue(splitted[4]), splitted[1], "", "", "", "", "Coinmotion", "", "EUR deposit", convertDate(splitted[0]))
+            newLine = createRow("Deposit", getValue(splitted[4]), splitted[1], "", "", "", "", "Coinmotion", "", "EUR deposit", convertDate(splitted[0], TIME_OFFSET))
             print(newLine)
             recognized += 1
         
         # If Depositing Crypto
         if splitted[2] == TYPE_FIN_RECEIVE and splitted[1] != 'EUR':
             newLine = ""
-            newLine = createRow("Deposit", getValue(splitted[4]), splitted[1], "", "", "", "", "Coinmotion", "", "Crypto deposit", convertDate(splitted[0]))
+            newLine = createRow("Deposit", getValue(splitted[4]), splitted[1], "", "", "", "", "Coinmotion", "", "Crypto deposit", convertDate(splitted[0], TIME_OFFSET))
             print(newLine)
             recognized += 1
         
         # If Withdrawing Fiat
         if splitted[2] == TYPE_FIN_WITHDRAW:
             #print("Withdrawing " + splitted[4])
-            newLine = createRow("Withdrawal", "", "", getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "Fiat withdrawal", convertDate(splitted[0]))
+            newLine = createRow("Withdrawal", "", "", getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "Fiat withdrawal", convertDate(splitted[0], TIME_OFFSET))
             print(newLine)
             recognized += 1
             
         # If Withdrawing Crypto
         if splitted[2] == TYPE_FIN_SENT:
             #print("Sending " + splitted[4] + " with fee " + splitted[5])
-            newLine = createRow("Withdrawal", "", "", getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "Crypto transfer", convertDate(splitted[0]))
+            newLine = createRow("Withdrawal", "", "", getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "Crypto transfer", convertDate(splitted[0], TIME_OFFSET))
             print(newLine)
             recognized += 1
         
