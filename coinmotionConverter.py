@@ -1,15 +1,17 @@
 
 # Constants
-TYPE_FIN_DEPOSIT  = "Talletus"
-TYPE_FIN_FAST_BUY = "Pikaosto"
-TYPE_FIN_SENT     = "Lähetetty maksu"
-TYPE_FIN_WITHDRAW = "Nosto"
+TYPE_FIN_DEPOSIT   = "Talletus"
+TYPE_FIN_FAST_BUY  = "Pikaosto"
+TYPE_FIN_SENT      = "Lähetetty maksu"
+TYPE_FIN_WITHDRAW  = "Nosto"
+TYPE_FIN_FAST_SELL = "Pikamyynti"
+TYPE_FIN_RECEIVE   = "Vastaanotettu maksu"
 
-STATE_FIN_READY   = "Valmis"
-
-TYPE_ENG_DEPOSIT  = "Deposit"
-TYPE_ENG_TRADE    = "Trade"
-TYPE_ENG_WITHDRAW = "Withdrawal"
+STATE_FIN_READY    = "Valmis"
+                   
+TYPE_ENG_DEPOSIT   = "Deposit"
+TYPE_ENG_TRADE     = "Trade"
+TYPE_ENG_WITHDRAW  = "Withdrawal"
 
 
 file = "coinmotion-balances-20200216-223558.csv"
@@ -101,22 +103,43 @@ def convertRows(data):
         splitted = line.split(',')
         date = convertDate(splitted[0])
         
+        oldRecognized = recognized
+        cryptoLine = ""
         # If buying crypto with Fiat
         if splitted[1] == 'EUR' and splitted[2] == TYPE_FIN_FAST_BUY:
             cryptoLine = data[x+1]
             cryptoLineSplitted = cryptoLine.split(',')
             #print("Trading " + splitted[4] + " EUR to" + cryptoLineSplitted[4] + " with fee " + splitted[5])
+            newLine = ""
+            newLine = createRow("Trade", getValue(cryptoLineSplitted[4]), cryptoLineSplitted[1], getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "EUR to Crypto trade", convertDate(splitted[0]))
+            print(newLine)
+            recognized += 1
+        
+        # If selling crypto to Fiat
+        if splitted[1] == 'EUR' and splitted[2] == TYPE_FIN_FAST_SELL:
+            cryptoLine = data[x+1]
+            cryptoLineSplitted = cryptoLine.split(',')
+            newLine = ""
+            newLine = createRow("Trade", getValue(splitted[4]), splitted[1], getValue(cryptoLineSplitted[4]), cryptoLineSplitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "EUR to Crypto trade", convertDate(splitted[0]))
+            print(newLine)
             recognized += 1
             
         # If Depositing Fiat
-        if splitted[2] == TYPE_FIN_DEPOSIT:
+        if splitted[2] == TYPE_FIN_DEPOSIT and splitted[1] == 'EUR':
             #print("Depositing " + splitted[4])
             newLine = ""
             #newLine += "\"Deposit\", " + "\"" + trimVal(splitted[4]) + "\", " + "\"" + splitted[1] + "\", " + "\"\", " + "\"\", " + "\"\", " + "\"\", " + "\"Coinmotion\", " + "\"\", " + "\"EUR deposit\", " + "\"" + convertDate(splitted[0]) + "\""
             newLine = createRow("Deposit", getValue(splitted[4]), splitted[1], "", "", "", "", "Coinmotion", "", "EUR deposit", convertDate(splitted[0]))
             print(newLine)
             recognized += 1
-            
+        
+        # If Depositing Crypto
+        if splitted[2] == TYPE_FIN_RECEIVE and splitted[1] != 'EUR':
+            newLine = ""
+            newLine = createRow("Deposit", getValue(splitted[4]), splitted[1], "", "", "", "", "Coinmotion", "", "Crypto deposit", convertDate(splitted[0]))
+            print(newLine)
+            recognized += 1
+        
         # If Withdrawing Fiat
         if splitted[2] == TYPE_FIN_WITHDRAW:
             #print("Withdrawing " + splitted[4])
@@ -130,6 +153,12 @@ def convertRows(data):
             newLine = createRow("Withdrawal", "", "", getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "Crypto transfer", convertDate(splitted[0]))
             print(newLine)
             recognized += 1
+        
+        if oldRecognized == recognized  and cryptoLine != "":
+            #print("Not recognized: " + line)
+            pass
+            
+        
             
     print("recognized + " + str(recognized) + " lines")
 
