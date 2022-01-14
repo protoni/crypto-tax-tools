@@ -1,0 +1,26 @@
+1. Download excel export from Coinmotion
+Lompakkoni -> scroll down -> Lataa Excel-taulukkona
+
+2. Open export in excel and save as .csv
+
+3. Open .csv export in notepad++ and convert semicolons to colons:
+Ctrl + F ( Search ) -> replace all -> ; > ,
+
+4. Move .csv file under exports/ folder
+
+5. Open coinmotionConverter.py and edit line parameter to point to the new .csv report under exports/ ( line 21 )
+
+6. Open console and run coinmotionConverter.py
+python coinmotionConverter.py
+
+7. python script will print out the lines to command line, copy them and add them to a new file
+
+8. Add this at the first line of a new file containing the trades
+"Type","Buy","Cur.","Sell","Cur.","Fee","Cur.","Exchange","Group","Comment","Date"
+
+
+Example from a finished trades file that is ready to be imported to cointracking.info:
+"Type","Buy","Cur.","Sell","Cur.","Fee","Cur.","Exchange","Group","Comment","Date"
+"Deposit", "3.10000000", "ETH", "", "", "", "", "Coinmotion", "", "Crypto deposit", "2021-06-22 18:49:00"
+"Trade", "4809.19", "EUR", "3.10000000", "ETH", "78.20", "EUR", "Coinmotion", "", "EUR to Crypto trade", "2021-06-22 18:52:00"
+"Withdrawal", "", "", "4809.19", "EUR", "0.90", "EUR", "Coinmotion", "", "Fiat withdrawal", "2021-06-22 18:55:00"

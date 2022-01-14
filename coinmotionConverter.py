@@ -16,9 +16,10 @@ TYPE_ENG_WITHDRAW  = "Withdrawal"
 
 
 # Timezone offset ( hours )
-TIME_OFFSET        = -3
+TIME_OFFSET        = -2
 
-file = "coinmotion-balances-20200216-223558.csv"
+file = "balances-20210622-211215.csv"
+#file = "balances-20200807-235453.csv"
 exports = "exports"
 path = exports + "/" + file
 
@@ -110,7 +111,12 @@ def createRow(type, buy, cur1, sell, cur2, fee, cur3, exc, grp, cmnt, ts):
 def convertRows(data):
     newData = []
     recognized = 0
-
+    notRecognized = 0
+    skippedCount = 0
+    skippedLines = []
+    
+    print("Found rows: " + str(len(data)))
+    
     for x in range(len(data)):
         line = data[x]
         
@@ -168,14 +174,29 @@ def convertRows(data):
             newLine = createRow("Withdrawal", "", "", getValue(splitted[4]), splitted[1], getFee(splitted[5]), splitted[1], "Coinmotion", "", "Crypto transfer", convertDate(splitted[0], TIME_OFFSET))
             print(newLine)
             recognized += 1
-        
+                
+        if oldRecognized == recognized:
+            skippedCount += 1
+            skippedLines.append(splitted)
+                
         if oldRecognized == recognized  and cryptoLine != "":
-            #print("Not recognized: " + line)
+            notRecognized += 1
             pass
             
         
             
-    print("recognized + " + str(recognized) + " lines")
+    print("recognized: " + str(recognized) + " lines")
+    print("notRecognized: " + str(notRecognized))
+    
+    # Skips lines like these:
+    # ['28.7.2020 00:05', 'XLM', 'Pikaosto', 'Valmis', '+615.3501901 XLM', '', '0.080442 € / 1 XLM', '', '+0.0000000 XLM', '+1506.6318350 XLM']
+    print("skippedCount: " + str(skippedCount))
+    
+    # Check that skipped lines contains only uninformative lines
+    # Uncomment this to inspect skipped lines
+    #if skippedCount > 0:
+    #    for line in skippedLines:
+    #        print(line)
 
 
 data = reverseDateOrder(readFile(path))
